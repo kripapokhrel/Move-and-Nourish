@@ -1,0 +1,427 @@
+{
+  "_about": "Recipe ingredient -> USDA FoodData Central food (fdcId). 'stand_in' explains foods USDA doesn't list, where the closest USDA food is used. 'blend' averages several foods; 'scale' multiplies every nutrient. Regenerate lib/meals/nutrients.ts with scripts/fdc/build_nutrients.py.",
+  "almonds": {
+    "fdc": 170567
+  },
+  "apple": {
+    "fdc": 171688
+  },
+  "avocado": {
+    "fdc": 171705
+  },
+  "baby potatoes": {
+    "fdc": 170029
+  },
+  "balsamic vinegar": {
+    "fdc": 172241
+  },
+  "banana": {
+    "fdc": 173944
+  },
+  "basil": {
+    "fdc": 172232
+  },
+  "beef burger patty": {
+    "fdc": 174030
+  },
+  "beef mince": {
+    "fdc": 173110
+  },
+  "bell pepper": {
+    "fdc": 170108
+  },
+  "bell peppers": {
+    "fdc": 170108
+  },
+  "black beans": {
+    "fdc": 173735
+  },
+  "breadcrumbs": {
+    "fdc": 174928
+  },
+  "broccoli": {
+    "fdc": 170379
+  },
+  "brown lentils": {
+    "fdc": 172421
+  },
+  "brown rice": {
+    "fdc": 169704
+  },
+  "burger bun": {
+    "fdc": 174090
+  },
+  "cabbage": {
+    "fdc": 169975
+  },
+  "caesar dressing": {
+    "fdc": 169877
+  },
+  "capers": {
+    "fdc": 172238
+  },
+  "carrot": {
+    "fdc": 170393
+  },
+  "celery": {
+    "fdc": 169988
+  },
+  "cheddar": {
+    "fdc": 328637
+  },
+  "cheese slice": {
+    "fdc": 328637
+  },
+  "cherry tomatoes": {
+    "fdc": 321360
+  },
+  "chia seeds": {
+    "fdc": 170554
+  },
+  "chicken breast": {
+    "fdc": 171077
+  },
+  "chickpea flour": {
+    "fdc": 174288
+  },
+  "chickpeas": {
+    "fdc": 173800
+  },
+  "chilli flakes": {
+    "fdc": 171319,
+    "stand_in": "chili powder (USDA has no chilli flakes entry)"
+  },
+  "cod fillet": {
+    "fdc": 171955
+  },
+  "coriander": {
+    "fdc": 169997
+  },
+  "corn tortillas": {
+    "fdc": 175036
+  },
+  "cornflour": {
+    "fdc": 169698
+  },
+  "cottage cheese": {
+    "fdc": 172182
+  },
+  "courgette": {
+    "fdc": 169291
+  },
+  "couscous": {
+    "fdc": 169699
+  },
+  "croutons": {
+    "fdc": 172751
+  },
+  "cucumber": {
+    "fdc": 168409
+  },
+  "cumin": {
+    "fdc": 170923
+  },
+  "cumin seeds": {
+    "fdc": 170923
+  },
+  "curry powder": {
+    "fdc": 170924
+  },
+  "dates": {
+    "fdc": 168191
+  },
+  "edamame": {
+    "fdc": 168411
+  },
+  "egg": {
+    "fdc": 171287
+  },
+  "eggs": {
+    "fdc": 171287
+  },
+  "english muffin": {
+    "fdc": 172762
+  },
+  "fajita spice": {
+    "fdc": 172243,
+    "stand_in": "taco seasoning mix"
+  },
+  "falafel": {
+    "fdc": 172455
+  },
+  "feta": {
+    "fdc": 173420
+  },
+  "garam masala": {
+    "fdc": 170924,
+    "stand_in": "curry powder (USDA has no garam masala entry)"
+  },
+  "garlic": {
+    "fdc": 169230
+  },
+  "ghee": {
+    "fdc": 171314
+  },
+  "ginger": {
+    "fdc": 169231
+  },
+  "greek yogurt": {
+    "fdc": 170903
+  },
+  "green beans": {
+    "fdc": 169961
+  },
+  "green chilli": {
+    "fdc": 170497
+  },
+  "green curry paste": {
+    "fdc": 170497,
+    "stand_in": "green chilli peppers, the main ingredient (USDA has no curry paste entry)"
+  },
+  "halloumi": {
+    "fdc": 170846,
+    "stand_in": "low-moisture mozzarella, closest in protein and fat (USDA has no halloumi entry)"
+  },
+  "honey": {
+    "fdc": 169640
+  },
+  "hummus": {
+    "fdc": 174289
+  },
+  "kidney beans": {
+    "fdc": 174285
+  },
+  "lean beef strips": {
+    "fdc": 171804
+  },
+  "lemon": {
+    "fdc": 167747,
+    "note": "juice"
+  },
+  "lettuce": {
+    "fdc": 169247
+  },
+  "light coconut milk": {
+    "fdc": 170173,
+    "scale": 0.5,
+    "stand_in": "canned coconut milk at half strength; light coconut milk has about half the fat (USDA has no light entry)"
+  },
+  "light cream cheese": {
+    "fdc": 169079
+  },
+  "lime": {
+    "fdc": 168156,
+    "note": "juice"
+  },
+  "mango": {
+    "fdc": 169910
+  },
+  "milk": {
+    "fdc": 171267
+  },
+  "mint chutney": {
+    "fdc": 173475,
+    "stand_in": "fresh mint, the main ingredient (USDA has no mint chutney entry)"
+  },
+  "mixed berries": {
+    "blend": [
+      171711,
+      167755,
+      167762
+    ],
+    "stand_in": "average of blueberries, raspberries and strawberries"
+  },
+  "mixed greens": {
+    "fdc": 169249
+  },
+  "mixed vegetables": {
+    "fdc": 170471
+  },
+  "mozzarella": {
+    "fdc": 170845
+  },
+  "mustard": {
+    "fdc": 172234
+  },
+  "oats": {
+    "fdc": 2346396
+  },
+  "olive oil": {
+    "fdc": 171413
+  },
+  "olives": {
+    "fdc": 169094
+  },
+  "onion": {
+    "fdc": 170000
+  },
+  "paneer": {
+    "fdc": 170845,
+    "stand_in": "whole-milk mozzarella, closest in protein and fat (USDA's paneer entry is a prepared dish with added carbs)"
+  },
+  "parmesan": {
+    "fdc": 171247
+  },
+  "peanut butter": {
+    "fdc": 172470
+  },
+  "peanuts": {
+    "fdc": 172430
+  },
+  "peas": {
+    "fdc": 170016
+  },
+  "peas and carrots": {
+    "fdc": 170425
+  },
+  "pineapple": {
+    "fdc": 169124
+  },
+  "pita": {
+    "fdc": 174916
+  },
+  "poha": {
+    "fdc": 169756,
+    "stand_in": "white rice (poha is flattened rice; USDA has no poha entry)"
+  },
+  "pork tenderloin": {
+    "fdc": 168249
+  },
+  "pumpkin seeds": {
+    "fdc": 170556
+  },
+  "quinoa": {
+    "fdc": 168917
+  },
+  "raisins": {
+    "fdc": 168165
+  },
+  "red lentils": {
+    "fdc": 172420
+  },
+  "red onion": {
+    "fdc": 170000
+  },
+  "rice": {
+    "fdc": 168935
+  },
+  "rice cakes": {
+    "fdc": 170250
+  },
+  "rice noodles": {
+    "fdc": 169742
+  },
+  "romaine lettuce": {
+    "fdc": 169247
+  },
+  "salmon fillet": {
+    "fdc": 175167
+  },
+  "salsa": {
+    "fdc": 174524
+  },
+  "sea salt": {
+    "fdc": 173468
+  },
+  "sesame oil": {
+    "fdc": 171016
+  },
+  "sesame seeds": {
+    "fdc": 170150
+  },
+  "shrimp": {
+    "fdc": 175179
+  },
+  "small tortillas": {
+    "fdc": 174081
+  },
+  "smoked paprika": {
+    "fdc": 171329
+  },
+  "smoked salmon": {
+    "fdc": 173687
+  },
+  "soy milk": {
+    "fdc": 172446
+  },
+  "soy sauce": {
+    "fdc": 174277
+  },
+  "spinach": {
+    "fdc": 168462
+  },
+  "spring onion": {
+    "fdc": 170005
+  },
+  "sweet potato": {
+    "fdc": 168482
+  },
+  "sweetcorn": {
+    "fdc": 169216
+  },
+  "teriyaki sauce": {
+    "fdc": 171167
+  },
+  "tikka spice": {
+    "fdc": 171329,
+    "stand_in": "paprika (USDA has no tikka spice mix entry)"
+  },
+  "tofu": {
+    "fdc": 172475
+  },
+  "tomato": {
+    "fdc": 170457
+  },
+  "tomato passata": {
+    "fdc": 170501,
+    "stand_in": "crushed canned tomatoes"
+  },
+  "tuna": {
+    "fdc": 334194
+  },
+  "turkey mince": {
+    "fdc": 172850
+  },
+  "turkey sausage": {
+    "fdc": 174617
+  },
+  "turkey slices": {
+    "fdc": 172941
+  },
+  "turmeric": {
+    "fdc": 172231
+  },
+  "vegetable stock": {
+    "fdc": 171583
+  },
+  "veggie burger patty": {
+    "fdc": 174287
+  },
+  "walnuts": {
+    "fdc": 170187
+  },
+  "wholegrain bagel": {
+    "fdc": 174092
+  },
+  "wholegrain bread": {
+    "fdc": 172688
+  },
+  "wholewheat pasta": {
+    "fdc": 168910
+  },
+  "wholewheat roti": {
+    "fdc": 174075
+  },
+  "wholewheat spaghetti": {
+    "fdc": 169738
+  },
+  "wholewheat tortilla": {
+    "fdc": 174081
+  },
+  "yellow lentils": {
+    "fdc": 172420
+  },
+  "yogurt": {
+    "fdc": 170886
+  }
+}

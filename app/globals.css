@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* Warm, soft palette: cream and peach surfaces, rose accents, sage and butter for gentle highlights.
+   Text colours are checked for >= 4.5:1 contrast on paper and card. */
+@theme {
+  --color-ink: #3b322c;          /* headings, body text, primary buttons */
+  --color-muted: #72655c;        /* secondary text */
+  --color-line: #f0e1d5;         /* borders and dividers */
+  --color-paper: #fdf6ef;        /* page background */
+  --color-card: #fffbf7;         /* cards */
+  --color-brand: #b8435f;        /* rose: links, selected states, eyebrows */
+  --color-brand-soft: #fbe4dc;   /* peach wash: hero cards, chips */
+  --color-peach: #f0a48a;        /* logo, active tab marker (not for text) */
+  --color-peach-deep: #cf6d4f;   /* peach for large headline text, 3.3:1 on paper */
+  --color-sage: #8faa84;
+  --color-sage-soft: #e3ecdc;
+  --color-butter: #f3d27a;
+  --color-butter-soft: #fcf1d2;
+  --color-danger: #b42318;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --radius-card: 1.75rem;
+}
+
+body {
+  background:
+    radial-gradient(60rem 30rem at 100% 0%, #fde6db 0%, transparent 60%),
+    radial-gradient(40rem 24rem at 0% 100%, #fbeee2 0%, transparent 60%),
+    var(--color-paper);
+  background-attachment: fixed;
+  color: var(--color-ink);
+}
+
+/* Headings use the soft serif */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 100, "WONK" 0;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Small uppercase label above a heading, like "TODAY · LEGS" */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
