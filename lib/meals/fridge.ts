@@ -1,6 +1,7 @@
-// "What's in my fridge?": recipes made ONLY from what the user said they have. Nothing is assumed, not even oil or
-// spices. When few recipes fit, we ask about the ingredients that would unlock the most. Pure, and safe to run in
-// the browser (the form works out its questions as you type).
+// "What's in my fridge?": recipes built around what the user said they have. Recipes they can make with exactly
+// their list come first; the rest are the closest matches, each showing what else they'd need. Nothing is assumed
+// to be in the kitchen, not even oil or spices, so "what else you'd need" is honest. We also ask about the
+// ingredients that would complete the most recipes. Pure, and safe to run in the browser (the form uses it as you type).
 
 import { rankMeals } from "@/lib/personalization/apply";
 import type { Explicit, Inference } from "@/lib/personalization/infer";
@@ -117,6 +118,18 @@ function candidates({ profile, mealType }: Rules, items: string[]) {
     .map((recipe) => ({ recipe, ...fridgeMatch(recipe, items) }));
 }
 
+const isBasic = (item: string) => BASICS.some((b) => matches(b, item));
+
+/**
+ * Recipes worth suggesting for this list: ones that use at least one real ingredient from it. Oil, salt and spices
+ * alone don't count (almost every recipe uses them), unless basics are all the list matches.
+ */
+function usable(req: Rules, items: string[]) {
+  const all = candidates(req, items).filter((c) => c.have.length > 0);
+  const real = all.filter((c) => c.have.some((h) => !isBasic(h)));
+  return real.length ? real : all;
+}
+
 export const MAX_IDEAS = 3;
 export const MAX_QUESTIONS = 5;
 
@@ -152,39 +165,64 @@ export function fridgeQuestions(req: Rules & { items: string[]; declined: string
 
 export type FridgeRequest = Rules & {
   items: string[];
-  /** Recipe ids shown last time, tried last so "Update recipes" shows something new when it can */
+  /** Recipe ids shown last time, tried last so "Show other recipes" shows something new when it can */
   recent?: string[];
+  /** Things the user said they don't have. Recipes needing them sink down the list. */
+  declined?: string[];
   inferences: Inference[];
   explicit: Explicit;
   count?: number;
   random?: () => number;
 };
 
-/** Up to 3 recipes that use only what the user has, most-liked first, from different cuisines where possible. */
+/**
+ * Up to 3 recipes for what the user has. Ones they can make with exactly their list come first, then the closest:
+ * fewest missing ingredients, using the most of their list. Within the same number missing: most-liked first, and
+ * different cuisines where possible.
+ */
 export function suggestFromFridge(req: FridgeRequest) {
   const random = req.random ?? Math.random;
   const items = normalizeItems(req.items);
-  const complete = candidates(req, items).filter((c) => c.missing.length === 0);
+  const declined = new Set(normalizeItems(req.declined ?? []));
+  const pool = usable(req, items);
   const recent = new Set(req.recent ?? []);
   const type = (r: Recipe) => (req.mealType === "any" ? r.types[0] : req.mealType);
-  const ranked = rankMeals(complete.map((c) => toCandidate(c.recipe, type(c.recipe))), req.inferences, req.explicit)
-    .map(({ meal, score, because }) => ({
-      ...complete.find((c) => c.recipe.id === meal.id)!, because,
-      total: score + random() * 0.5 - (recent.has(meal.id as string) ? 2 : 0),
-    }))
-    .sort((a, b) => b.total - a.total);
+  const ranked = rankMeals(pool.map((c) => toCandidate(c.recipe, type(c.recipe))), req.inferences, req.explicit)
+    .map(({ meal, score, because }) => {
+      const c = pool.find((p) => p.recipe.id === meal.id)!;
+      return {
+        ...c, because,
+        // Something they said they don't have counts as missing twice: they'd have to go and buy it
+        away: c.missing.length + c.missing.filter((m) => declined.has(m.toLowerCase())).length,
+        total: score + c.have.filter((h) => !isBasic(h)).length * 0.3 + random() * 0.5 - (recent.has(meal.id as string) ? 2 : 0),
+      };
+    })
+    .sort((a, b) => a.away - b.away || b.total - a.total);
 
   const count = req.count ?? MAX_IDEAS;
   const picks: typeof ranked = [];
-  for (const x of ranked) if (picks.length < count && !picks.some((p) => p.recipe.cuisine === x.recipe.cuisine)) picks.push(x);
-  for (const x of ranked) if (picks.length < count && !picks.includes(x)) picks.push(x);
+  // Spread cuisines, but never at the cost of a recipe that needs more shopping than one that was skipped
+  for (const tier of [...new Set(ranked.map((x) => x.away))]) {
+    const group = ranked.filter((x) => x.away === tier);
+    for (const x of group) if (picks.length < count && !picks.some((p) => p.recipe.cuisine === x.recipe.cuisine)) picks.push(x);
+    for (const x of group) if (picks.length < count && !picks.includes(x)) picks.push(x);
+    if (picks.length >= count) break;
+  }
 
-  return { items, ideas: picks, total: complete.length, unchecked: dietRules(req.profile).unchecked };
+  return {
+    items,
+    ideas: picks,
+    total: pool.filter((c) => c.missing.length === 0).length,
+    unchecked: dietRules(req.profile).unchecked,
+  };
 }
 
 /** How many recipes can be made from exactly this list (for "that's all you can make" messages). */
 export const makeableCount = (req: Rules & { items: string[] }) =>
   candidates(req, normalizeItems(req.items)).filter((c) => c.missing.length === 0).length;
+
+/** How many recipes use something real from this list, including ones that need a few more things. */
+export const matchingCount = (req: Rules & { items: string[] }) => usable(req, normalizeItems(req.items)).length;
 
 /** The fridge list is saved with the ideas as JSON. Older saves were a comma-separated list. */
 export type FridgeInput = { items: string[]; declined: string[]; mealType: MealType | "any" };

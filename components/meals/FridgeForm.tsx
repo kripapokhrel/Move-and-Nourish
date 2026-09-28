@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { OptionGroup } from "@/components/ui/OptionGroup";
 import { generateFridgeIdeasAction } from "@/lib/meals/actions";
 import {
-  BASICS, FRIDGE_SUGGESTIONS, fridgeQuestions, makeableCount, matches, normalizeItems, type FridgeInput,
+  BASICS, FRIDGE_SUGGESTIONS, fridgeQuestions, makeableCount, matches, matchingCount, normalizeItems, type FridgeInput,
 } from "@/lib/meals/fridge";
 import type { MealType } from "@/lib/meals/library";
 import { MEAL_TYPES } from "@/lib/meals/options";
@@ -21,7 +21,8 @@ const AUTO_SEARCH_MS = 600;
 const searchKey = (items: string[], mealType: string) => `${mealType}|${normalizeItems(items).sort().join(",")}`;
 
 /**
- * The user lists exactly what they have. Recipes only use those things. How many recipes the list makes, the
+ * The user lists what they have. Recipes they can make with exactly that come first, then the closest ones, each
+ * showing what else is needed. How many recipes the list makes, the
  * "Do you have …?" questions and items no recipe uses are all worked out here as the list changes.
  * Recipes update on their own shortly after the list or meal changes; there's no button to press.
  * `results` are the saved recipes from the last search (`saved`); they're hidden when they no longer match.
@@ -57,7 +58,8 @@ export function FridgeForm({ saved, dietProfile, results }: {
   const wantedKey = searchKey(items, mealType);
   const resultsAreOld = hasResults && searchKey(saved.items, saved.mealType) !== wantedKey;
   // Only the added chips count here, not a half-typed word, so the search doesn't jump around while typing
-  const chipsCanMake = useMemo(() => makeableCount({ profile: dietProfile, mealType, items }), [dietProfile, mealType, items]);
+  const chipsMatch = useMemo(() => matchingCount({ profile: dietProfile, mealType, items }), [dietProfile, mealType, items]);
+  const matchCount = useMemo(() => matchingCount({ profile: dietProfile, mealType, items: current }), [dietProfile, mealType, current]);
 
   const forMeal = useMemo(
     () => (items.length ? fridgeQuestions({ profile: dietProfile, mealType, items, declined }) : []),
@@ -96,7 +98,7 @@ export function FridgeForm({ saved, dietProfile, results }: {
   // Search by itself once the list settles, whenever it can make something the saved results weren't found for
   const arriving = doneKey === wantedKey && (!hasResults || resultsAreOld);
   const loading = pending || arriving;
-  const needsSearch = chipsCanMake > 0 && items.length > 0 && (!hasResults || resultsAreOld) && !arriving && failedKey !== wantedKey;
+  const needsSearch = chipsMatch > 0 && items.length > 0 && (!hasResults || resultsAreOld) && !arriving && failedKey !== wantedKey;
   useEffect(() => {
     if (!needsSearch || loading) return;
     const timer = setTimeout(() => find(items, declined, mealType), AUTO_SEARCH_MS);
@@ -120,8 +122,9 @@ export function FridgeForm({ saved, dietProfile, results }: {
       <Card title="What's in your fridge?">
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            List exactly what you have. Be specific, like &ldquo;chicken breast&rdquo;, &ldquo;brown rice&rdquo; or
-            &ldquo;cheddar&rdquo;. Recipes will only use what&apos;s on your list, including oil and spices.
+            List what you have. Be specific, like &ldquo;chicken breast&rdquo;, &ldquo;brown rice&rdquo; or
+            &ldquo;cheddar&rdquo;. Recipes you can make with just your list come first. Others show anything else
+            you&apos;d need, including oil and spices.
           </p>
           <div className="flex gap-2">
             <input
@@ -179,7 +182,9 @@ export function FridgeForm({ saved, dietProfile, results }: {
             <div className="space-y-1.5 rounded-2xl bg-paper p-3 text-sm" aria-live="polite">
               <p>
                 {canMake === 0
-                  ? "Nothing can be made from exactly this list yet."
+                  ? matchCount > 0
+                    ? "Nothing can be made from exactly this list, so we'll show the closest recipes and what else you'd need."
+                    : "No recipes use anything on this list yet. Try adding a main ingredient, like chicken, eggs, rice or beans."
                   : `With this list you can make ${canMake} ${canMake === 1 ? "recipe" : "recipes"}${mealType === "any" ? "" : ` for ${MEAL_CHOICES.find((m) => m.value === mealType)?.label.toLowerCase()}`}.`}
               </p>
               {mealType !== "any" && (canMakeAny > canMake || questionsAreForOtherMeals) && (
@@ -194,7 +199,7 @@ export function FridgeForm({ saved, dietProfile, results }: {
                 <p className="text-muted">No recipes use {unknown.join(", ")} yet, so {unknown.length === 1 ? "it" : "they"} won&apos;t change the results.</p>
               )}
               {canMake === 0 && questions.length > 0 && (
-                <p className="text-muted">See &ldquo;Do you have any of these?&rdquo; below for the quickest way to a recipe.</p>
+                <p className="text-muted">Answer &ldquo;Do you have any of these?&rdquo; below to find recipes you can make right now.</p>
               )}
             </div>
           )}
@@ -210,23 +215,29 @@ export function FridgeForm({ saved, dietProfile, results }: {
       </Card>
 
       {/* Old recipes are only kept on screen (faded) while new ones load; a list that makes nothing shows none */}
-      {hasResults && (!resultsAreOld || (loading && chipsCanMake > 0)) && (
+      {hasResults && (!resultsAreOld || (loading && chipsMatch > 0)) && (
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Recipes you can make with only what you have</h2>
+          <h2 className="text-xl font-semibold">Recipes for what you have</h2>
           {resultsAreOld ? (
             <p className="text-sm text-muted">Updating for your new list…</p>
           ) : (() => {
             const total = makeableCount({ profile: dietProfile, mealType: saved.mealType, items: saved.items });
-            return total > 3 ? (
+            const matching = matchingCount({ profile: dietProfile, mealType: saved.mealType, items: saved.items });
+            const summary = total === 0
+              ? "None use only your list, so these are the closest. Each shows what else you'd need."
+              : total >= 3
+                ? `You can make ${total} ${total === 1 ? "recipe" : "recipes"} with exactly this list.`
+                : `You can make ${total === 1 ? "1 recipe" : `${total} recipes`} with exactly this list. The rest need a few extra things.`;
+            return matching > 3 ? (
               <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                You can make {total} recipes with this list.
+                {summary}
                 <button type="button" disabled={pending} onClick={() => find(items, declined, mealType)}
                   className="font-semibold text-brand underline disabled:opacity-50">
                   {pending ? "Loading…" : "Show other recipes"}
                 </button>
               </p>
             ) : (
-              <p className="text-sm text-muted">That&apos;s {total === 1 ? "the only recipe" : `all ${total} recipes`} you can make with exactly this list.</p>
+              <p className="text-sm text-muted">{summary}</p>
             );
           })()}
           <div className={resultsAreOld ? "pointer-events-none opacity-50" : ""}>{results}</div>

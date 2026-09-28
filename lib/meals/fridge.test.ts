@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findRecipe } from "./library";
 import {
-  MAX_IDEAS, fridgeMatch, fridgeQuestions, makeableCount, matches, normalizeItems, parseFridgeInput, suggestFromFridge, type FridgeRequest,
+  MAX_IDEAS, fridgeMatch, fridgeQuestions, makeableCount, matches, matchingCount, normalizeItems, parseFridgeInput, suggestFromFridge, type FridgeRequest,
 } from "./fridge";
 
 const seeded = (seed: number) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
@@ -45,9 +45,15 @@ describe("matching what you have", () => {
 });
 
 describe("suggestFromFridge", () => {
-  it("only suggests recipes you have every ingredient for, at most 3", () => {
-    const { ideas } = suggestFromFridge(request({ items: NOODLES }));
-    expect(ideas.map((i) => i.recipe.id)).toEqual(["peanut-tofu-noodles"]);
+  it("puts recipes you can make with exactly your list first, then the closest, at most 3", () => {
+    const { ideas, total } = suggestFromFridge(request({ items: NOODLES }));
+    expect(total).toBe(1);
+    expect(ideas[0].recipe.id).toBe("peanut-tofu-noodles");
+    expect(ideas[0].missing).toEqual([]);
+    expect(ideas).toHaveLength(MAX_IDEAS);
+    for (const i of ideas.slice(1)) expect(i.missing.length).toBeGreaterThan(0);
+    // Closest first: never more missing than the one after it
+    for (let n = 1; n < ideas.length; n++) expect(ideas[n].missing.length).toBeGreaterThanOrEqual(ideas[n - 1].missing.length);
     const many = suggestFromFridge(request({
       items: ["apple", "peanut butter", "edamame", "sea salt", "hummus", "carrot", "cucumber", "bell pepper", "greek yogurt",
         "honey", "walnuts", "eggs", "cherry tomatoes", "cottage cheese", "pineapple"],
@@ -58,12 +64,44 @@ describe("suggestFromFridge", () => {
     expect(new Set(many.map((i) => i.recipe.cuisine)).size).toBeGreaterThan(1);
   });
 
-  it("still follows diet and restrictions", () => {
+  it("still follows diet and restrictions, even for close matches", () => {
     const { ideas } = suggestFromFridge(request({
       profile: { dietary_type: "vegan", allergies: [], dietary_restrictions: ["soy_free"] },
       items: NOODLES,
     }));
-    expect(ideas).toEqual([]);
+    expect(ideas.map((i) => i.recipe.id)).not.toContain("peanut-tofu-noodles");
+    for (const i of ideas) {
+      expect(i.recipe.diet).toBe("vegan");
+      expect(i.recipe.ingredients.map((x) => x.item)).not.toEqual(expect.arrayContaining(["tofu"]));
+    }
+  });
+
+  it("suggests close recipes when nothing can be made exactly (soy chunks and olive oil)", () => {
+    const veggie = { dietary_type: "vegetarian" as const, allergies: [], dietary_restrictions: [] };
+    const { ideas, total } = suggestFromFridge(request({ profile: veggie, items: ["soy chunks", "olive oil"], mealType: "breakfast" }));
+    expect(total).toBe(0);
+    expect(ideas.length).toBeGreaterThan(0);
+    for (const i of ideas) {
+      expect(i.have).toContain("olive oil");
+      expect(i.missing.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("needs a real ingredient from your list, not just oil or salt, when one matches", () => {
+    const { ideas } = suggestFromFridge(request({ items: ["red lentils", "olive oil", "sea salt"] }));
+    for (const i of ideas) expect(i.have).toContain("red lentils");
+  });
+
+  it("finds nothing when no recipe uses anything on the list", () => {
+    expect(suggestFromFridge(request({ items: ["soy chunks"] })).ideas).toEqual([]);
+    expect(matchingCount({ profile: omnivore, mealType: "any", items: ["soy chunks"] })).toBe(0);
+  });
+
+  it("moves recipes needing something you said you don't have further down", () => {
+    const items = ["oats", "banana"];
+    const first = (declined: string[]) => suggestFromFridge(request({ items, declined, random: () => 0.5 })).ideas[0].recipe.id;
+    expect(first([])).toBe("banana-porridge");
+    expect(first(["milk"])).not.toBe("banana-porridge");
   });
 });
 
@@ -93,7 +131,7 @@ describe("parseFridgeInput", () => {
 describe("common fridge staples", () => {
   it("makes something from burger, bread and avocado", () => {
     const { ideas } = suggestFromFridge(request({ items: ["burger", "bread", "avocado"] }));
-    expect(ideas.map((i) => i.recipe.id).sort()).toEqual(["avocado-toast", "beef-burger"]);
+    expect(ideas.slice(0, 2).map((i) => i.recipe.id).sort()).toEqual(["avocado-toast", "beef-burger"]);
     const burger = ideas.find((i) => i.recipe.id === "beef-burger")!;
     expect(burger.have).toEqual(["beef burger patty", "burger bun", "avocado"]);
   });

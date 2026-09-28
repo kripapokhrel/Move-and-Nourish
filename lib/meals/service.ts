@@ -115,9 +115,9 @@ export async function generateFridgeIdeas(
   if (!profile) throw new Error("Finish onboarding before getting meal ideas.");
 
   const recent = previous.map((m) => m.library_id).filter((id): id is string => !!id);
-  const result = suggestFromFridge({ profile, items, mealType, inferences, explicit, recent });
+  const result = suggestFromFridge({ profile, items, declined, mealType, inferences, explicit, recent });
   if (!result.ideas.length) {
-    throw new Error("There's no recipe you can make with only these yet. Check the questions below, or add more of what you have.");
+    throw new Error("No recipes use anything on your list yet. Try adding a main ingredient, like chicken, eggs, rice or beans.");
   }
   await saveBatch(db, userId, profile, result.ideas.map(({ recipe, because }) => {
     const type = mealType === "any" ? recipe.types[0] : mealType;

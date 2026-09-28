@@ -94,7 +94,7 @@ export function MealCard({ meal, rating, fitNote, fridge }: {
       {fridge && (
         <div className="space-y-1 text-sm">
           <p><span className="text-brand">✓ Uses:</span> {fridge.have.join(", ")}</p>
-          {/* Older fridge results could need extra ingredients; new ones never do */}
+          {/* Close matches from the fridge need a few things that weren't on the list */}
           {fridge.missing.length > 0 && <p><span className="text-muted">You&apos;d also need:</span> {fridge.missing.join(", ")}</p>}
         </div>
       )}

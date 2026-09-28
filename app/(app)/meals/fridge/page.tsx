@@ -42,7 +42,7 @@ export default async function FridgePage() {
         title="What's in my fridge?"
         action={<Link href="/meals" className="text-sm font-semibold text-brand">← Meal ideas</Link>}
       >
-        Tell us what you have and we&apos;ll only suggest recipes you can make with it.
+        Tell us what you have. We&apos;ll suggest recipes that use it, and tell you anything else you&apos;d need.
       </PageHeader>
 
       {needsMigration ? (
