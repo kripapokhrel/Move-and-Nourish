@@ -185,7 +185,7 @@ describe("rankMeals", () => {
     ], inferences, x);
     expect(ranked.map((r) => r.meal.name)).toEqual(["Paneer tikka", "Pasta bake"]);
     expect(explain(ranked[0].because)).toBe(
-      "Recommended because you often save Indian meals, it takes 20 minutes and you usually pick quick meals and it's high in protein, like the meals you usually save.",
+      "Recommended because you often save Indian meals, you usually pick quick meals (this one takes 20 minutes) and you usually save high-protein meals.",
     );
     expect(ranked[1].because).toEqual([]);
   });

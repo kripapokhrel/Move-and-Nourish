@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { AboutSection, FitnessSection, NutritionSection } from "./ProfileSections";
 import { useProfileForm } from "./useProfileForm";
-import { WeeklyEmailTest } from "./WeeklyEmailTest";
 import { saveProfile } from "@/lib/profile/actions";
 import type { Profile } from "@/types/database";
 
@@ -37,19 +36,16 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       <Card title="Training"><FitnessSection {...sectionProps} /></Card>
       <Card title="Nutrition"><NutritionSection {...sectionProps} /></Card>
       <Card title="Emails">
-        <div className="space-y-4">
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" className="mt-0.5" checked={form.state.weekly_email_opt_in}
-              onChange={(e) => form.set("weekly_email_opt_in", e.target.checked)} />
-            <span>
-              Send me a weekly summary every Sunday
-              <span className="block text-xs text-muted">
-                Your workouts, meals and weight trend for the week, what we&apos;ve learned about what you like, and one idea for next week.
-              </span>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-0.5" checked={form.state.weekly_email_opt_in}
+            onChange={(e) => form.set("weekly_email_opt_in", e.target.checked)} />
+          <span>
+            Send me a weekly summary every Sunday
+            <span className="block text-xs text-muted">
+              Your workouts, meals and weight trend for the week, what we&apos;ve learned about what you like, and one idea for next week.
             </span>
-          </label>
-          <WeeklyEmailTest />
-        </div>
+          </span>
+        </label>
       </Card>
       <div className="sticky bottom-0 flex items-center gap-3 border-t border-line bg-paper py-3">
         <Button onClick={save} disabled={pending}>{pending ? "Saving…" : "Save changes"}</Button>

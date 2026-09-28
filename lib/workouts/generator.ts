@@ -59,7 +59,7 @@ const TEMPLATES: Record<ResolvedFocus, Slot[]> = {
     ["legs_accessory", "Glutes"], ["hinge", "Glutes"], ["lunge", "Glutes"],
   ],
   push: ["push_horizontal", "push_vertical", "push_horizontal", "shoulders", "triceps", "triceps", "core"],
-  pull: ["pull_horizontal", "pull_vertical", "pull_horizontal", "shoulders", "biceps", "biceps", "core"],
+  pull: ["pull_horizontal", "pull_vertical", "pull_horizontal", "biceps", "pull_horizontal", "biceps", "core"],
   core: ["core", "core", "core", "core", "core", "core", "core"],
   // Leaves a cardio exercise free for the finisher, even for bodyweight-only beginners
   cardio: ["cardio", "cardio", "core", "cardio", "cardio"],
@@ -71,7 +71,7 @@ const FOCUS_MUSCLES: Record<ResolvedFocus, string[]> = {
   legs: ["Quads", "Hamstrings", "Calves"],
   glutes: ["Glutes", "Hamstrings"],
   push: ["Chest", "Shoulders", "Triceps"],
-  pull: ["Back", "Biceps", "Shoulders"],
+  pull: ["Back", "Biceps"],
   core: ["Core"],
   cardio: ["Full body"],
 };
@@ -270,6 +270,10 @@ export function generateWorkoutPlan(req: WorkoutRequest): GeneratedWorkout {
     : { focus: req.focus, reason: "" };
 
   const fits = (e: LibraryExercise) => gear.has(e.needs) && e.level <= level && !used.has(e.name);
+  // Gym users get equipment exercises where there is one; home moves like the under-table pull-up are a fallback.
+  // Core and the bookends stay open, since planks and stretches are normal at the gym.
+  const atGym = gear.has("gym");
+  const suitsGym = (e: LibraryExercise) => !atGym || e.needs !== "none" || e.pattern === "core" || bookend(e);
   // Prefer exercises not in the refreshed-away version, then fall back so a slot is never empty
   const choose = (pattern: Pattern, prefer: (e: LibraryExercise) => boolean = () => true, strict = false) => {
     const all = EXERCISES.filter((e) => e.pattern === pattern && fits(e) && (!strict || prefer(e)));
@@ -277,7 +281,7 @@ export function generateWorkoutPlan(req: WorkoutRequest): GeneratedWorkout {
     const options = all.filter((e) => !isExcluded(e));
     const fresh = options.filter((e) => !rejected.has(e.name));
     const pick =
-      pickOne(fresh.filter(prefer)) ?? pickOne(fresh) ??
+      pickOne(fresh.filter((e) => prefer(e) && suitsGym(e))) ?? pickOne(fresh.filter(prefer)) ?? pickOne(fresh) ??
       pickOne(options.filter(prefer)) ?? pickOne(options) ?? pickOne(all);
     if (pick) used.add(pick.name);
     return pick;
@@ -369,7 +373,7 @@ export function generateWorkoutPlan(req: WorkoutRequest): GeneratedWorkout {
   const gearText = gear.has("gym") ? "gym equipment" : gear.size > 1 ? "your equipment" : "just your bodyweight";
   return generatedWorkoutSchema.parse({
     name: cardio ? "Cardio Conditioning" : `${focusLabel.replace(/\b\w/g, (c) => c.toUpperCase())} Workout`,
-    notes: reason || `A ${planned.minutes}-minute ${focusLabel.toLowerCase()} session for a ${levelLabel}, using ${gearText}.`,
+    notes: reason || `A ${planned.minutes}-minute ${focusLabel.toLowerCase()} session for ${/^[aeiou]/.test(levelLabel) ? "an" : "a"} ${levelLabel}, using ${gearText}.`,
     exercises,
     personalized_because: why,
   });

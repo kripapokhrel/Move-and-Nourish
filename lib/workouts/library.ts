@@ -372,12 +372,12 @@ export const EXERCISES: LibraryExercise[] = [
     "With a slight bend in your elbows, raise your arms out to the sides up to shoulder height.",
     "Lower slowly. Lead with your elbows and don't shrug.",
   ], { image: "Side_Lateral_Raise" }),
-  ex("Band pull-apart", "shoulders", "Shoulders", "bands", 0, [
+  ex("Band pull-apart", "pull_horizontal", "Back", "bands", 0, [
     "Hold a band in front of you at shoulder height with straight arms.",
     "Pull the band apart until it touches your chest, squeezing your shoulder blades.",
     "Return slowly with control.",
   ], { image: "Band_Pull_Apart" }),
-  ex("Rope pull to face", "shoulders", "Shoulders", "gym", 0, [
+  ex("Rope pull to face", "pull_horizontal", "Back", "gym", 0, [
     "Set a rope on a cable at head height and hold an end in each hand, palms facing in.",
     "Pull the rope toward your forehead, spreading the ends apart and keeping your elbows high.",
     "Squeeze your upper back, then return slowly.",

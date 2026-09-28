@@ -94,17 +94,17 @@ export function CheckInForm({ today, minDate, logs, imperial, profileWeightKg }:
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={`Weight (${imperial ? "lb" : "kg"})`}>
-            <TextInput type="number" inputMode="decimal" step="0.1" value={v.weight} onChange={(e) => set("weight", e.target.value)} />
+            <TextInput aria-label={`Weight (${imperial ? "lb" : "kg"})`} type="number" inputMode="decimal" step="0.1" value={v.weight} onChange={(e) => set("weight", e.target.value)} />
           </Field>
           <Field label={`Waist (${imperial ? "in" : "cm"}, optional)`}>
-            <TextInput type="number" inputMode="decimal" step="0.1" value={v.waist} onChange={(e) => set("waist", e.target.value)} />
+            <TextInput aria-label={`Waist (${imperial ? "in" : "cm"})`} type="number" inputMode="decimal" step="0.1" value={v.waist} onChange={(e) => set("waist", e.target.value)} />
           </Field>
         </div>
         <Field label="Water">
           <div className="flex items-center gap-3">
             <Button variant="secondary" aria-label="One glass less" disabled={v.glasses === 0} onClick={() => set("glasses", v.glasses - 1)}>−</Button>
             <span className="min-w-28 text-center text-sm tabular-nums">
-              {v.glasses} {v.glasses === 1 ? "glass" : "glasses"} <span className="text-muted">({(v.glasses * GLASS_ML) / 1000} L)</span>
+              {v.glasses} {v.glasses === 1 ? "glass" : "glasses"} <span className="text-muted">({imperial ? `${Math.round((v.glasses * GLASS_ML) / 29.57)} fl oz` : `${(v.glasses * GLASS_ML) / 1000} L`})</span>
             </span>
             <Button variant="secondary" aria-label="One glass more" disabled={v.glasses >= 20} onClick={() => set("glasses", v.glasses + 1)}>+</Button>
           </div>
@@ -124,7 +124,9 @@ export function CheckInForm({ today, minDate, logs, imperial, profileWeightKg }:
             <button type="button" className="text-xs text-muted underline" onClick={() => setOfferWeight(null)}>Not now</button>
           </div>
         )}
-        <p className="text-xs text-muted">Weight naturally moves 1–2 kg from day to day. The 7-day average below shows the real trend.</p>
+        <p className="text-xs text-muted">
+          Weight naturally moves {imperial ? "2–4 lb" : "1–2 kg"} from day to day. The 7-day average at the top shows the real trend.
+        </p>
       </div>
     </Card>
   );
