@@ -48,9 +48,15 @@ export default async function MealsPage({ searchParams }: { searchParams: Promis
   if (!profile) redirect("/onboarding");
 
   const { latest, needsMigration } = meals;
-  // Saved meals that are also in the latest ideas show once, up top
-  const latestIds = new Set(latest.map((m) => m.id));
-  const saved = meals.saved.filter((m) => !latestIds.has(m.id));
+  // Each recipe shows once: saved meals already in the latest ideas stay up top, and a recipe saved from two
+  // different batches is listed once (newest first)
+  const shown = new Set(latest.map((m) => m.meal_name.toLowerCase()));
+  const saved = meals.saved.filter((m) => {
+    const key = m.meal_name.toLowerCase();
+    if (shown.has(key)) return false;
+    shown.add(key);
+    return true;
+  });
   const feedback = await loadRatings(supabase, userId, [...latest, ...saved].map((m) => m.id));
   const ratings = new Map(feedback.map((f) => [f.target_id, f]));
 

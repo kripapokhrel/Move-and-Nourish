@@ -30,7 +30,7 @@ const doneSchema = z.object({ exerciseId: id, done: z.boolean() });
 const finishSchema = z.object({
   workoutId: id,
   durationMin: z.number({ error: "Enter how many minutes it took" }).int().min(1, "At least 1 minute").max(300, "300 minutes max"),
-  done: z.array(id).max(50),
+  done: z.array(id).min(1, "Tick at least one exercise you did, or use Skip today.").max(50),
 });
 const rateWorkoutSchema = z.object({ workoutId: id, rating: z.enum(["too_easy", "just_right", "too_hard"]).nullable() });
 const rateExerciseSchema = z.object({ exerciseId: id, rating: z.enum(["too_easy", "too_hard"]).nullable() });
@@ -47,10 +47,11 @@ async function run(label: string, fn: (db: Awaited<ReturnType<typeof requireUser
     if (/user_events|user_preferences|recommendation_feedback|user_behavior_summary|personaliz/.test(message)) {
       return { ok: false, error: "The database needs an update: run supabase/migrations/0004_personalization.sql in the Supabase SQL editor." };
     }
-    if (/column .*user_notes/.test(message)) {
+    // Postgres says "column workouts.user_notes does not exist"; Supabase says "Could not find the 'user_notes' column"
+    if (/column .*user_notes|'user_notes' column/.test(message)) {
       return { ok: false, error: "The database needs an update: run supabase/migrations/0003_workout_user_notes.sql in the Supabase SQL editor." };
     }
-    if (/column .*(focus|notes)/.test(message)) {
+    if (/column .*(focus|notes)|'(focus|notes)' column/.test(message)) {
       return { ok: false, error: "The database needs an update: run supabase/migrations/0002_workout_focus.sql in the Supabase SQL editor." };
     }
     return { ok: false, error: message || "Something went wrong. Try again." };

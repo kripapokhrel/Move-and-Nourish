@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { NutritionTargets } from "@/components/nutrition/NutritionTargets";
 import { PersonalizationSettings } from "@/components/profile/PersonalizationSettings";
 import { SettingsForm } from "@/components/profile/SettingsForm";
+import { WeeklyEmailTest } from "@/components/profile/WeeklyEmailTest";
 import { requireUser } from "@/lib/auth/session";
 import { getNutritionProfile } from "@/lib/db/nutrition";
 import { describeError, getPreferences, isMissingSchema } from "@/lib/db/personalization";
@@ -38,6 +39,13 @@ export default async function ProfilePage() {
       {nutrition && <Card title="Your current targets"><NutritionTargets n={nutrition} detailed /></Card>}
       {/* key forces a fresh form after save + refresh */}
       <SettingsForm key={profile.updated_at} profile={profile} />
+      {/* Outside the form so the sticky Save bar never covers it */}
+      <Card title="Try the weekly email">
+        <div className="space-y-3">
+          <p className="text-sm text-muted">See what arrives on Sunday. This doesn&apos;t count as your weekly email.</p>
+          <WeeklyEmailTest />
+        </div>
+      </Card>
       <PersonalizationSettings
         enabled={enabled}
         preferences={preferences}

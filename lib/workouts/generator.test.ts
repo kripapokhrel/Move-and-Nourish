@@ -88,6 +88,32 @@ describe("generateWorkoutPlan", () => {
     }
   });
 
+  it("keeps Pull days on back and biceps, with core only as a top-up", () => {
+    for (let seed = 1; seed < 10; seed++) {
+      for (const profile of [base().profile, { ...base().profile, available_equipment: ["dumbbells" as const] }, { ...base().profile, workout_location: "gym" as const }]) {
+        const muscles = generateWorkoutPlan(base({ profile, focus: "pull", random: seeded(seed) })).exercises.slice(1, -2).map((e) => e.muscle_group);
+        expect(muscles.every((m) => m === "Back" || m === "Biceps" || m === "Core")).toBe(true);
+      }
+    }
+  });
+
+  // Glutes days can still fall back to hip lifts and step-ups, which are fine at the gym
+  it("gives gym users equipment exercises instead of home moves on upper-body and full-body days", () => {
+    const gym = { ...base().profile, workout_location: "gym" as const };
+    for (let seed = 1; seed < 20; seed++) {
+      for (const focus of ["full_body", "push", "pull"] as const) {
+        const main = generateWorkoutPlan(base({ profile: gym, focus, random: seeded(seed) })).exercises.slice(1, -2);
+        const home = main.filter((e) => byName.get(e.exercise_name)?.needs === "none" && byName.get(e.exercise_name)?.pattern !== "core");
+        expect(home.map((e) => e.exercise_name)).toEqual([]);
+      }
+    }
+  });
+
+  it("says 'an intermediate' but 'a beginner'", () => {
+    expect(generateWorkoutPlan(base({ profile: { ...base().profile, fitness_level: "intermediate" } })).notes).toContain("for an intermediate,");
+    expect(generateWorkoutPlan(base()).notes).toContain("for a beginner,");
+  });
+
   it("never repeats an exercise in one workout", () => {
     const w = generateWorkoutPlan(base({ focus: "core", profile: { ...base().profile, session_duration_min: 90 } }));
     const names = w.exercises.map((e) => e.exercise_name);

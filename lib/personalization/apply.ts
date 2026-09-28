@@ -109,18 +109,18 @@ export function rankMeals<T extends MealCandidate>(meals: T[], inferences: Infer
       const ingredients = new Set((meal.ingredients ?? []).map((i) => i.toLowerCase()));
       const liked = kind("favor_ingredient").filter((i) => ingredients.has(i.value as string));
       score += liked.reduce((t, i) => t + i.confidence * 0.5, 0);
-      if (liked.length) because.push(`it has ${liked.slice(0, 2).map((i) => i.value).join(" and ")}, which you often choose`);
+      if (liked.length) because.push(`you often choose ${liked.slice(0, 2).map((i) => i.value).join(" and ")}`);
       score -= kind("avoid_ingredient").filter((i) => ingredients.has(i.value as string)).reduce((t, i) => t + i.confidence * 0.5, 0);
 
       if (quick && meal.prep_time_min) {
         if (meal.prep_time_min <= (quick.value as number)) {
           score += quick.confidence;
-          because.push(`it takes ${meal.prep_time_min} minutes and you usually pick quick meals`);
+          because.push(`you usually pick quick meals (this one takes ${meal.prep_time_min} minutes)`);
         } else score -= quick.confidence / 2;
       }
       if (protein && isHighProtein(meal)) {
         score += protein.confidence;
-        because.push("it's high in protein, like the meals you usually save");
+        because.push("you usually save high-protein meals");
       }
       const type = kind("favor_meal_type").find((i) => i.value === meal.meal_type?.toLowerCase());
       if (type) score += type.confidence * 0.5;
@@ -129,6 +129,6 @@ export function rankMeals<T extends MealCandidate>(meals: T[], inferences: Infer
     .sort((a, b) => b.score - a.score);
 }
 
-/** "Recommended because you usually choose high-protein meals and it takes 20 minutes." */
+/** "Recommended because you often save Indian meals and you usually pick quick meals (this one takes 20 minutes)." */
 export const explain = (because: string[]) =>
   because.length ? `Recommended because ${because.length === 1 ? because[0] : `${because.slice(0, -1).join(", ")} and ${because.at(-1)}`}.` : null;

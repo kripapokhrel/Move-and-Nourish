@@ -17,7 +17,8 @@ import { ExerciseRating, WorkoutRating, type ExerciseFeedback } from "./WorkoutF
 
 export type SwapOption = { name: string; muscle: string; image: string | null };
 export type WorkoutFeedbackState = { workout: string | null; exercises: Record<string, ExerciseFeedback> };
-type Run = (fn: () => Promise<WorkoutActionResult>, onOk?: () => void) => void;
+// onError shows the message next to the control that failed; without it, it shows under the exercise list
+type Run = (fn: () => Promise<WorkoutActionResult>, onOk?: () => void, onError?: (message: string) => void) => void;
 
 const NO_FEEDBACK: ExerciseFeedback = { rating: null, preference: null };
 
@@ -49,14 +50,14 @@ export function TodayWorkout({ workout, swapOptions, feedback }: {
   };
 
   // Edits keep the workout on screen and just refresh it once saved
-  const run: Run = (fn, onOk) => {
+  const run: Run = (fn, onOk, onError) => {
     setError(null);
     startSaving(async () => {
       const res = await fn();
       if (res.ok) {
         onOk?.();
         router.refresh();
-      } else setError(res.error);
+      } else (onError ?? setError)(res.error);
     });
   };
 
@@ -209,8 +210,11 @@ function FinishPanel({ workout, done, open, setOpen, busy, run }: {
     <div className="space-y-3 rounded-xl border border-line p-3">
       <p className="text-sm">
         You ticked <strong>{ticked} of {total}</strong> exercises.
-        {ticked < total && <span className="text-muted"> Unticked ones are saved as skipped.</span>}
+        {ticked > 0 && ticked < total && <span className="text-muted"> Unticked ones are saved as skipped.</span>}
       </p>
+      {ticked === 0 && (
+        <p className="text-sm text-muted">Tick the exercises you did first. Didn&apos;t get to train today? Use Skip today instead.</p>
+      )}
       <label className="flex items-center gap-2 text-sm">
         How long did it take?
         <span className="w-20">
@@ -220,12 +224,15 @@ function FinishPanel({ workout, done, open, setOpen, busy, run }: {
       </label>
       <div className="flex flex-wrap gap-3">
         <Button
-          disabled={busy}
+          disabled={busy || ticked === 0}
           onClick={() => run(() => finishWorkoutAction({ workoutId: workout.id, durationMin: Number(minutes), done: [...done] }))}
         >
           Save workout
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => setOpen(false)}>Not yet</Button>
+        {ticked === 0 && (
+          <Button variant="secondary" disabled={busy} onClick={() => run(() => skipWorkoutAction(workout.id))}>Skip today</Button>
+        )}
       </div>
     </div>
   );
@@ -236,6 +243,7 @@ function NotesBox({ workout, editing, busy, run }: {
 }) {
   const [text, setText] = useState(workout.user_notes ?? "");
   const [saved, setSaved] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   if (!editing) {
     return workout.user_notes ? (
@@ -253,7 +261,7 @@ function NotesBox({ workout, editing, busy, run }: {
       <textarea
         id="workout-notes"
         value={text}
-        onChange={(ev) => { setText(ev.target.value); setSaved(false); }}
+        onChange={(ev) => { setText(ev.target.value); setSaved(false); setNoteError(null); }}
         rows={3}
         maxLength={1000}
         placeholder="What do you want to do today? e.g. go lighter on squats, knee feels sore"
@@ -263,12 +271,16 @@ function NotesBox({ workout, editing, busy, run }: {
         <Button
           variant="secondary"
           disabled={busy || !dirty}
-          onClick={() => run(() => saveWorkoutNotesAction({ workoutId: workout.id, notes: text }), () => setSaved(true))}
+          onClick={() => {
+            setNoteError(null);
+            run(() => saveWorkoutNotesAction({ workoutId: workout.id, notes: text }), () => setSaved(true), setNoteError);
+          }}
         >
           Save notes
         </Button>
         {saved && !dirty && <span className="text-xs text-brand">Saved</span>}
       </div>
+      {noteError && <p className="text-sm text-danger">{noteError}</p>}
     </div>
   );
 }
