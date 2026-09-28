@@ -53,9 +53,9 @@ export default async function FridgePage() {
         </Card>
       ) : (
         <>
+          {/* No key on purpose: the form keeps what you're typing while new results load in */}
           <FridgeForm
-            key={latest[0]?.batch_id ?? "none"}
-            initial={input}
+            saved={input}
             dietProfile={{ dietary_type: profile.dietary_type, dietary_restrictions: profile.dietary_restrictions, allergies: profile.allergies }}
             results={latest.length > 0 && (
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

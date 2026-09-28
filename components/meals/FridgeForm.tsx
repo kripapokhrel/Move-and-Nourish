@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,33 +14,36 @@ import type { Profile } from "@/types/database";
 
 const MEAL_CHOICES = [{ value: "any", label: "Any meal" }, ...MEAL_TYPES];
 
-const sameList = (a: string[], b: string[]) => {
-  const x = normalizeItems(a).sort();
-  const y = normalizeItems(b).sort();
-  return x.length === y.length && x.every((v, i) => v === y[i]);
-};
+// Recipes wait this long after the last change to the list, so tapping several chips makes one search
+const AUTO_SEARCH_MS = 600;
+
+/** Identifies a search: the same list and meal give the same key, in any order. */
+const searchKey = (items: string[], mealType: string) => `${mealType}|${normalizeItems(items).sort().join(",")}`;
 
 /**
  * The user lists exactly what they have. Recipes only use those things. How many recipes the list makes, the
- * "Do you have …?" questions and items no recipe uses are all worked out here as the list changes, before searching.
- * `results` are the saved recipes from the last search; they're hidden or marked as old when they no longer match.
+ * "Do you have …?" questions and items no recipe uses are all worked out here as the list changes.
+ * Recipes update on their own shortly after the list or meal changes; there's no button to press.
+ * `results` are the saved recipes from the last search (`saved`); they're hidden when they no longer match.
  */
-export function FridgeForm({ initial, dietProfile, results }: {
-  initial: FridgeInput;
+export function FridgeForm({ saved, dietProfile, results }: {
+  /** The list and meal the current `results` were found for */
+  saved: FridgeInput;
   dietProfile: Pick<Profile, "dietary_type" | "dietary_restrictions" | "allergies">;
   /** Recipe cards from the last successful search, if any */
   results: ReactNode;
 }) {
   const router = useRouter();
-  const [items, setItems] = useState(initial.items);
-  const [declined, setDeclined] = useState(initial.declined);
+  const [items, setItems] = useState(saved.items);
+  const [declined, setDeclined] = useState(saved.declined);
   const [typed, setTyped] = useState("");
-  const [mealType, setMealType] = useState<MealType | "any">(initial.mealType);
+  const [mealType, setMealType] = useState<MealType | "any">(saved.mealType);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  // The last search that worked, so results can be marked as old once the list changes
-  const saved = initial;
-  const [lastFailed, setLastFailed] = useState(false);
+  // A search that failed isn't retried on its own until the list changes (the button can still retry it)
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  // The last search that succeeded. Its recipes take a moment to arrive, so it isn't searched again meanwhile.
+  const [doneKey, setDoneKey] = useState<string | null>(null);
 
   const current = useMemo(() => normalizeItems([...items, ...typed.split(",")]), [items, typed]);
   const canMake = useMemo(() => makeableCount({ profile: dietProfile, mealType, items: current }), [dietProfile, mealType, current]);
@@ -50,8 +53,11 @@ export function FridgeForm({ initial, dietProfile, results }: {
   );
   // Things no recipe uses at all, so the person knows they won't help
   const unknown = items.filter((i) => !FRIDGE_SUGGESTIONS.some((r) => matches(i, r)));
-  const hasResults = !!results && initial.items.length > 0;
-  const resultsAreOld = hasResults && (!sameList(saved.items, current) || saved.mealType !== mealType);
+  const hasResults = !!results && saved.items.length > 0;
+  const wantedKey = searchKey(items, mealType);
+  const resultsAreOld = hasResults && searchKey(saved.items, saved.mealType) !== wantedKey;
+  // Only the added chips count here, not a half-typed word, so the search doesn't jump around while typing
+  const chipsCanMake = useMemo(() => makeableCount({ profile: dietProfile, mealType, items }), [dietProfile, mealType, items]);
 
   const forMeal = useMemo(
     () => (items.length ? fridgeQuestions({ profile: dietProfile, mealType, items, declined }) : []),
@@ -72,28 +78,38 @@ export function FridgeForm({ initial, dietProfile, results }: {
     setTyped("");
   };
 
-  const find = (list = withTyped(), no = declined, meal = mealType) => {
-    setItems(list);
-    setTyped("");
+  const find = (list: string[], no: string[], meal: MealType | "any") => {
     setError(null);
     start(async () => {
       const res = await generateFridgeIdeasAction({ items: list, declined: no, mealType: meal });
       if (res.ok) {
-        setLastFailed(false);
+        setFailedKey(null);
+        setDoneKey(searchKey(list, meal));
         router.refresh();
       } else {
-        setLastFailed(true);
+        setFailedKey(searchKey(list, meal));
         setError(res.error);
       }
     });
   };
 
+  // Search by itself once the list settles, whenever it can make something the saved results weren't found for
+  const arriving = doneKey === wantedKey && (!hasResults || resultsAreOld);
+  const loading = pending || arriving;
+  const needsSearch = chipsCanMake > 0 && items.length > 0 && (!hasResults || resultsAreOld) && !arriving && failedKey !== wantedKey;
+  useEffect(() => {
+    if (!needsSearch || loading) return;
+    const timer = setTimeout(() => find(items, declined, mealType), AUTO_SEARCH_MS);
+    return () => clearTimeout(timer);
+    // find is recreated every render; the search only depends on the list and meal
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsSearch, loading, wantedKey]);
+
   const answer = (item: string, yes: boolean) => {
     if (yes) {
-      // A question from another meal only helps if we search all meals
-      const meal = questionsAreForOtherMeals ? "any" : mealType;
-      setMealType(meal);
-      find(normalizeItems([...items, item]), declined, meal);
+      // A question from another meal only helps if we search all meals. The new list searches by itself.
+      if (questionsAreForOtherMeals) setMealType("any");
+      setItems(normalizeItems([...items, item]));
     }
     else setDeclined([...declined, item]);
   };
@@ -183,30 +199,37 @@ export function FridgeForm({ initial, dietProfile, results }: {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => find()} disabled={pending || (!items.length && !typed.trim()) || canMake === 0}>
-              {pending ? "Finding recipes…" : hasResults ? "Update recipes" : "Find recipes"}
-            </Button>
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
+          {loading && <p className="text-sm text-muted" aria-live="polite">Finding recipes for your list…</p>}
+          {error && !loading && (
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-danger">{error}</p>
+              <Button variant="secondary" onClick={() => find(items, declined, mealType)}>Try again</Button>
+            </div>
+          )}
         </div>
       </Card>
 
-      {hasResults && !lastFailed && (
+      {/* Old recipes are only kept on screen (faded) while new ones load; a list that makes nothing shows none */}
+      {hasResults && (!resultsAreOld || (loading && chipsCanMake > 0)) && (
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Recipes you can make with only what you have</h2>
           {resultsAreOld ? (
-            <p className="rounded-2xl bg-butter-soft p-3 text-sm">
-              These are from your last search ({saved.items.join(", ")}). Press <strong>Update recipes</strong> to search your
-              current list.
-            </p>
+            <p className="text-sm text-muted">Updating for your new list…</p>
           ) : (() => {
             const total = makeableCount({ profile: dietProfile, mealType: saved.mealType, items: saved.items });
-            return total > 3
-              ? <p className="text-sm text-muted">You can make {total} recipes with this list. Press Update recipes to see others.</p>
-              : <p className="text-sm text-muted">That&apos;s {total === 1 ? "the only recipe" : `all ${total} recipes`} you can make with exactly this list.</p>;
+            return total > 3 ? (
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                You can make {total} recipes with this list.
+                <button type="button" disabled={pending} onClick={() => find(items, declined, mealType)}
+                  className="font-semibold text-brand underline disabled:opacity-50">
+                  {pending ? "Loading…" : "Show other recipes"}
+                </button>
+              </p>
+            ) : (
+              <p className="text-sm text-muted">That&apos;s {total === 1 ? "the only recipe" : `all ${total} recipes`} you can make with exactly this list.</p>
+            );
           })()}
-          <div className={resultsAreOld ? "opacity-50" : ""}>{results}</div>
+          <div className={resultsAreOld ? "pointer-events-none opacity-50" : ""}>{results}</div>
         </section>
       )}
 

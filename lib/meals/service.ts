@@ -104,13 +104,15 @@ export async function generateMealIdeas(db: SupabaseClient, userId: string, meal
 export async function generateFridgeIdeas(
   db: SupabaseClient, userId: string, items: string[], declined: string[], mealType: MealType | "any",
 ) {
-  const [profile, nutrition, previous] = await Promise.all([
-    getProfile(db, userId),
+  // Preferences only need the profile, so load them alongside the other reads instead of after them
+  const profileRead = getProfile(db, userId);
+  const [profile, nutrition, previous, { inferences, explicit }] = await Promise.all([
+    profileRead,
     getNutritionProfile(db, userId),
     getLatestBatch(db, userId, "fridge"),
+    profileRead.then((p) => loadPreferences(db, userId, p)),
   ]);
   if (!profile) throw new Error("Finish onboarding before getting meal ideas.");
-  const { inferences, explicit } = await loadPreferences(db, userId, profile);
 
   const recent = previous.map((m) => m.library_id).filter((id): id is string => !!id);
   const result = suggestFromFridge({ profile, items, mealType, inferences, explicit, recent });
