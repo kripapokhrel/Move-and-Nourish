@@ -19,7 +19,10 @@ export async function sendTestWeeklyEmailAction(): Promise<{ ok: true; to: strin
     const message = (e as Error)?.message ?? "";
     console.error("sendTestWeeklyEmail failed", message);
     if (/Missing env var GMAIL/.test(message)) {
-      return { ok: false, error: "Email isn't set up yet: add GMAIL_USER and GMAIL_APP_PASSWORD to .env.local and restart the app." };
+      return {
+        ok: false,
+        error: "Email isn't set up yet. Add GMAIL_USER and GMAIL_APP_PASSWORD to .env.local and restart the app (on your computer), or to the project's Environment Variables in Vercel and redeploy (live site).",
+      };
     }
     if (/Invalid login|Username and Password not accepted/i.test(message)) {
       return { ok: false, error: "Gmail didn't accept the login. Check GMAIL_USER and that GMAIL_APP_PASSWORD is an app password, not your normal one." };
